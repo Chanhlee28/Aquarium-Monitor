@@ -1,6 +1,6 @@
 # Aquarium Monitor PWA
 
-Starter dashboard for ThingSpeak channel 3499531, Field 1 = Glass Aquarium Temperature.
+ThingSpeak dashboard for glass aquarium temperature.
 
 ## Features
 - Current temperature and in-app warning above 25°C
@@ -10,18 +10,20 @@ Starter dashboard for ThingSpeak channel 3499531, Field 1 = Glass Aquarium Tempe
 - Connection status
 - Installable from iPhone Safari
 
-## Important limitations
-The temperature alert is an in-app alert evaluated while the app is open. This starter does not send push notifications when the app is closed; reliable push alerts need a push service/backend or a separate monitoring service.
-
-For a public ThingSpeak channel, leave the Read API key blank. For a private channel, the read key can be entered in the app's settings and is stored in that browser on the device. Never use the Write API key. A key included in public source files is visible to anyone.
-
 ## Publish using GitHub Pages
-1. Create a GitHub repository named `aquarium-monitor`.
-2. Upload `index.html`, `manifest.json`, `sw.js`, `icon.svg`, and `README.md` to the repository root.
-3. Open repository Settings → Pages. Choose deployment from the `main` branch and `/ (root)`, then save.
-4. Wait for the URL to appear in Settings → Pages and open it.
-5. On iPhone, open the URL in Safari → Share → Add to Home Screen.
-6. Launch it from the Home Screen icon.
+Upload these files to the repository root and replace the matching old files:
+- `index.html`
+- `manifest.json`
+- `sw.js`
+- `icon-192.png`
+- `icon-512.png`
+- `apple-touch-icon.png`
+- `README.md`
 
-GitHub Pages hosts static files without a server you need to maintain and provides HTTPS. First load needs internet. Cached app files may open offline, but ThingSpeak readings require internet.
-\n\n## Left-facing Boa shrimp app icon\n- Uses the left-facing Boa shrimp artwork on a black background.\n- Dashboard 🌊 emoji and existing ThingSpeak dashboard functionality are unchanged.\n- Includes 192×192, 512×512, and 180×180 PNG icon assets.\n- Service-worker cache version updated to `aquarium-monitor-v3`.\n
+The app icon is a left-facing Boa shrimp on an opaque black background. The dashboard's 🌊 emoji remains unchanged. This version uses PNG icons only; `icon.svg` is not needed and can be deleted from the repository.
+
+## ThingSpeak privacy
+For a private channel, enter the Read API key in the app's connection settings. It is stored in that browser on the device. Never use the Write API key. Do not embed a key in public source files.
+
+## iPhone icon refresh
+After GitHub Pages deploys, remove the old Home Screen shortcut and add the website again in Safari using Share → Add to Home Screen.
