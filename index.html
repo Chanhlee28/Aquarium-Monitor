@@ -19,17 +19,47 @@ function status(mode,msg){$("dot").className="dot "+mode;$("status").textContent
 function message(id,msg,show=true){$(id).textContent=msg;$(id).classList.toggle("show",show)}
 function selected(){const cut=Date.now()-Number($("period").value)*3600000;return S.feeds.filter(f=>f.t>=cut)}
 function draw(data){
-const c=$("chart"),r=c.getBoundingClientRect(),dpr=devicePixelRatio||1;c.width=Math.max(1,r.width*dpr);c.height=Math.max(1,r.height*dpr);const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);const w=r.width,h=r.height,p={l:38,r:8,t:12,b:20};x.clearRect(0,0,w,h);S.chartData=data;S.chartGeom=null;
-if(!data.length){x.fillStyle="#9eb1bb";x.fillText("No readings in this period",12,h/2);$("chartTooltip").style.display="none";return}
-let lo=Math.min(...data.map(a=>a.v)),hi=Math.max(...data.map(a=>a.v));if(hi-lo<.5){lo-=.5;hi+=.5}else{lo-=.15;hi+=.15}
-const xx=t=>p.l+(t-data[0].t)/Math.max(1,data[data.length-1].t-data[0].t)*(w-p.l-p.r),yy=v=>h-p.b-(v-lo)/(hi-lo)*(h-p.t-p.b);S.chartGeom={w,h,p,lo,hi,x:xx,y:yy};
-x.font="10px sans-serif";x.strokeStyle="#2b414d";x.fillStyle="#9eb1bb";for(let i=0;i<4;i++){let v=lo+(hi-lo)*i/3,y=yy(v);x.beginPath();x.moveTo(p.l,y);x.lineTo(w-p.r,y);x.stroke();x.fillText(v.toFixed(1),2,y+3)}x.strokeStyle="#45d6c5";x.lineWidth=2.2;x.beginPath();data.forEach((a,i)=>i?x.lineTo(xx(a.t),yy(a.v)):x.moveTo(xx(a.t),yy(a.v)));x.stroke();$("start").textContent=new Date(data[0].t).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});$("end").textContent=new Date(data.at(-1).t).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+const c=$("chart"),r=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+c.width=Math.max(1,Math.round(r.width*dpr));c.height=Math.max(1,Math.round(r.height*dpr));
+const ctx=c.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
+const w=r.width,h=r.height,p={l:38,r:8,t:12,b:20};
+ctx.clearRect(0,0,w,h);S.chartData=data;S.chartGeom=null;
+if(!data.length){ctx.fillStyle="#9eb1bb";ctx.font="13px sans-serif";ctx.fillText("No readings in this period",12,h/2);$("chartTooltip").style.display="none";return}
+let lo=Math.min(...data.map(a=>a.v)),hi=Math.max(...data.map(a=>a.v));
+if(hi-lo<.5){lo-=.5;hi+=.5}else{lo-=.15;hi+=.15}
+const xx=t=>p.l+(t-data[0].t)/Math.max(1,data[data.length-1].t-data[0].t)*(w-p.l-p.r);
+const yy=v=>h-p.b-(v-lo)/(hi-lo)*(h-p.t-p.b);
+S.chartGeom={w,h,p,x:xx,y:yy};
+ctx.font="10px sans-serif";ctx.strokeStyle="#2b414d";ctx.fillStyle="#9eb1bb";
+for(let i=0;i<4;i++){const val=lo+(hi-lo)*i/3,y=yy(val);ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(w-p.r,y);ctx.stroke();ctx.fillText(val.toFixed(1),2,y+3)}
+ctx.strokeStyle="#45d6c5";ctx.lineWidth=2.2;ctx.lineJoin="round";ctx.lineCap="round";ctx.beginPath();
+data.forEach((a,i)=>i?ctx.lineTo(xx(a.t),yy(a.v)):ctx.moveTo(xx(a.t),yy(a.v)));ctx.stroke();
+$("start").textContent=new Date(data[0].t).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+$("end").textContent=new Date(data[data.length-1].t).toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
 }
-function showPointAt(clientX){const c=$("chart"),tip=$("chartTooltip"),data=S.chartData||[],g=S.chartGeom;if(!g||!data.length)return;const rect=c.getBoundingClientRect(),px=clientX-rect.left;let best=null,dist=Infinity;for(const a of data){const d=Math.abs(g.x(a.t)-px);if(d<dist){dist=d;best=a}}if(!best)return;tip.innerHTML=`<strong>${best.v.toFixed(2)}°C</strong><br>${time(best.t)}`;tip.style.left=Math.max(65,Math.min(rect.width-65,g.x(best.t))+"px");tip.style.top=Math.max(38,g.y(best.v))+"px";tip.style.display="block";drawCrosshair(best)}
-function drawCrosshair(a){const c=$("chart"),g=S.chartGeom;if(!g)return;const dpr=devicePixelRatio||1,x=c.getContext("2d");x.save();x.setTransform(dpr,0,0,dpr,0,0);x.strokeStyle="#edf5f7";x.lineWidth=1;x.setLineDash([3,3]);x.beginPath();x.moveTo(g.x(a.t),g.p.t);x.lineTo(g.x(a.t),g.h-g.p.b);x.stroke();x.setLineDash([]);x.fillStyle=a.v>threshold?"#ff625f":"#45d6c5";x.beginPath();x.arc(g.x(a.t),g.y(a.v),4,0,Math.PI*2);x.fill();x.restore()}
-function hidePoint(){ $("chartTooltip").style.display="none";draw(selected())}
+function showPointAt(clientX){
+const c=$("chart"),tip=$("chartTooltip"),data=S.chartData||[],g=S.chartGeom;
+if(!g||!data.length)return;
+const rect=c.getBoundingClientRect(),px=clientX-rect.left;
+let best=data[0],bestDist=Infinity;
+for(const point of data){const dist=Math.abs(g.x(point.t)-px);if(dist<bestDist){best=point;bestDist=dist}}
+const x=Math.max(70,Math.min(rect.width-70,g.x(best.t)));
+const y=Math.max(42,g.y(best.v));
+tip.innerHTML="<strong>"+best.v.toFixed(2)+"°C</strong><br>"+time(best.t);
+tip.style.left=x+"px";tip.style.top=y+"px";tip.style.display="block";
+const dpr=window.devicePixelRatio||1,ctx=c.getContext("2d");
+ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);
+ctx.strokeStyle="#edf5f7";ctx.lineWidth=1;ctx.setLineDash([3,3]);
+ctx.beginPath();ctx.moveTo(g.x(best.t),g.p.t);ctx.lineTo(g.x(best.t),g.h-g.p.b);ctx.stroke();
+ctx.setLineDash([]);ctx.fillStyle=best.v>threshold?"#ff625f":"#45d6c5";
+ctx.beginPath();ctx.arc(g.x(best.t),g.y(best.v),4,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+function hidePoint(){ $("chartTooltip").style.display="none";draw(selected()); }
 function render(){if(!S.feeds.length)return;const last=S.feeds.at(-1);$("current").textContent=last.v.toFixed(2)+"°C";$("current").className="temp "+(last.v>threshold?"hot":"good");$("badge").textContent=last.v>threshold?"Above 25°C":"Within threshold";$("badge").className="pill "+(last.v>threshold?"hot":"");$("reading").textContent=time(last.t);$("refreshed").textContent=new Date().toLocaleTimeString();message("alert",last.v>threshold?`TEMPERATURE ALERT: ${last.v.toFixed(2)}°C is above ${threshold}°C.`:"",last.v>threshold);const a=selected();if(a.length){const mn=a.reduce((p,c)=>c.v<p.v?c:p),mx=a.reduce((p,c)=>c.v>p.v?c:p);$("min").textContent=mn.v.toFixed(2)+"°C";$("max").textContent=mx.v.toFixed(2)+"°C";$("minwhen").textContent=time(mn.t);$("maxwhen").textContent=time(mx.t)}else{$("min").textContent=$("max").textContent="—";$("minwhen").textContent=$("maxwhen").textContent="No readings in this period"}draw(a)}
 async function refresh(){status("", "Updating…");const s=settings(),p=new URLSearchParams({results:"800"});if(s.key)p.set("api_key",s.key);try{const res=await fetch(`https://api.thingspeak.com/channels/${encodeURIComponent(s.channel)}/feeds.json?${p}`,{cache:"no-store"});if(!res.ok)throw Error("HTTP "+res.status);const j=await res.json();if(!Array.isArray(j.feeds))throw Error("Unexpected ThingSpeak response");S.feeds=j.feeds.map(f=>({t:Date.parse(f.created_at),v:Number(f.field1)})).filter(f=>Number.isFinite(f.t)&&Number.isFinite(f.v)&&f.v>=-40&&f.v<=85).sort((a,b)=>a.t-b.t);if(!S.feeds.length)throw Error("No valid Field 1 readings; check channel privacy and settings");status("online","Connected");message("info",`Loaded ${S.feeds.length} readings.`,true);render()}catch(e){status("error","Connection issue");message("info","Could not update ThingSpeak: "+e.message+". Values may be old.",true)}}
-$("chart").addEventListener("pointermove",e=>{if(e.pointerType==="touch")return;draw(selected());showPointAt(e.clientX)});$("chart").addEventListener("pointerleave",hidePoint);$("chart").addEventListener("pointerdown",e=>{if(e.pointerType==="touch")showPointAt(e.clientX)});$("chart").addEventListener("touchend",()=>setTimeout(()=>{ $("chartTooltip").style.display="none";draw(selected())},2200),{passive:true});$("refresh").onclick=refresh;$("period").onchange=render;$("save").onclick=()=>{const c=$("channel").value.trim();if(!/^\d+$/.test(c)){message("info","Enter a numeric channel ID.");return}localStorage.setItem("aq_channel",c);localStorage.setItem("aq_key",$("key").value.trim());refresh()};$("clear").onclick=()=>{localStorage.removeItem("aq_key");$("key").value="";refresh()};$("channel").value=settings().channel;$("key").value=settings().key;window.addEventListener("resize",()=>draw(selected()));window.addEventListener("online",refresh);window.addEventListener("offline",()=>status("error","Offline"));refresh();setInterval(refresh,60000);if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
+$("chart").addEventListener("pointermove",e=>{if(e.pointerType==="touch")return;draw(selected());showPointAt(e.clientX)});
+$("chart").addEventListener("pointerleave",hidePoint);
+$("chart").addEventListener("pointerdown",e=>{showPointAt(e.clientX)});
+$("refresh").onclick=refresh;$("period").onchange=render;$("save").onclick=()=>{const c=$("channel").value.trim();if(!/^\d+$/.test(c)){message("info","Enter a numeric channel ID.");return}localStorage.setItem("aq_channel",c);localStorage.setItem("aq_key",$("key").value.trim());refresh()};$("clear").onclick=()=>{localStorage.removeItem("aq_key");$("key").value="";refresh()};$("channel").value=settings().channel;$("key").value=settings().key;window.addEventListener("resize",()=>draw(selected()));window.addEventListener("online",refresh);window.addEventListener("offline",()=>status("error","Offline"));refresh();setInterval(refresh,60000);if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
 })();
 </script></body></html>
