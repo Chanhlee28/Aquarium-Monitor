@@ -24,3 +24,4 @@ For a public ThingSpeak channel, leave the Read API key blank. For a private cha
 6. Launch it from the Home Screen icon.
 
 GitHub Pages hosts static files without a server you need to maintain and provides HTTPS. First load needs internet. Cached app files may open offline, but ThingSpeak readings require internet.
+\n\n## Left-facing Boa shrimp app icon\n- Uses the left-facing Boa shrimp artwork on a black background.\n- Dashboard 🌊 emoji and existing ThingSpeak dashboard functionality are unchanged.\n- Includes 192×192, 512×512, and 180×180 PNG icon assets.\n- Service-worker cache version updated to `aquarium-monitor-v3`.\n
